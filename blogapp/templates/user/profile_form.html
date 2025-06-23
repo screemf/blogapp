@@ -1,0 +1,13 @@
+{% extends "blogapp/base.html" %}
+
+
+{% block content %}
+  <h2>Профиль пользователя</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Применить</button>
+ <button type="button" onclick="location.href='{% url 'author_create_form' %}'">Стать автором</button>
+
+  </form>
+{% endblock %}

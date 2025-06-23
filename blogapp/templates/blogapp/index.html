@@ -1,0 +1,39 @@
+{% extends 'blogapp/base.html' %}
+{% load custom_filters %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+{% block content %}
+
+<a href="{% url 'contacts' %}">Контаткты</a>
+
+<h1>Домашняя Страница</h1>
+<p>Блог</p>
+
+<div>
+    <p>Колличество постов: {{ total_posts }}</p>
+    <p>Колличество пользователей: {{ total_users }}</p>
+    <p>Колличество авторов: {{ total_authors }}</p>
+    <p>Колличество желающих стать авторами: {{ total_pending_authors }}</p>
+</div>
+
+{% if most_liked_post %}
+    <p>Пост с наибольшим количеством лайков:<a href="{% url 'post' most_liked_post.pk %}">{{ most_liked_post.title }} </a></p>
+    <div>
+        <p>{{ most_liked_post.content }}</p>
+    </div>
+{% else %}
+    <p>Постов нет.</p>
+{% endif %}
+{% if most_liked_comment %}
+    <p>Комментарий с наибольшим количеством лайков:</p>
+    <div>
+        <p>{{ most_liked_comment.text }}</p>
+        <a href="{% url 'post' most_liked_comment.post.pk %}">Перейти к посту с этим комментарием</a>
+    </div>
+{% else %}
+    <p>Комментариев нет.</p>
+{% endif %}
+
+{% endblock %}

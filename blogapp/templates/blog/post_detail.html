@@ -1,0 +1,58 @@
+<!-- post_detail.html -->
+{%  extends 'blogapp/base.html' %}
+
+{% load static %}
+<script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
+{% load comment_extras %}
+{% block content %}
+<h1>{{ post.title }}</h1>
+<p>{{ post.content }}</p>
+
+<h2>Комментарии</h2>
+
+<div id="comments">
+  {% for comment in comments %}
+    {% include 'blog/comment.html' with comment=comment recursive=True %}
+            <button class="like-comment" data-url="{% url 'like_comment' comment.pk %}">{{ comment.likes }} Like</button>
+
+  {% endfor %}
+</div>
+
+<h3>Добавить комментарий</h3>
+<form method="post" id="comment-form">
+  {% csrf_token %}
+  {{ comment_form.as_p }}
+  <input type="hidden" name="parent_id" id="parent-id">
+  <button type="submit">Добавить комментарий</button>
+</form>
+    <script>
+
+     const postId = {{ post.id }};
+    const commentSocket = new WebSocket(
+        'ws://' + 'localhost:8000' + '/ws/comments/' + postId + '/'
+    );
+
+    commentSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log('Comment received: ', data);
+
+        alert(`New comment received from user ${data.comment_author_id}: ${data.comment}`);
+    };
+
+    commentSocket.onclose = function(e) {
+        console.error('Comment socket closed unexpectedly');
+    };
+</script>
+{% endblock %}
+<script>
+document.querySelectorAll('.reply-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        document.getElementById('parent-id').value = this.getAttribute('data-id');
+        const form = document.getElementById('comment-form');
+        const parentComment = button.parentElement;
+        parentComment.appendChild(form);
+        form.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+

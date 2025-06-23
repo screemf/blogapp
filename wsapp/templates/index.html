@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const socket = new WebSocket('ws://localhost:8000/ws/posts/');
+
+            socket.onopen = function(e) {
+                console.log("[open] Соединение установлено");
+                socket.send(JSON.stringify({message: 'Привет, сервер!'}));
+            };
+
+            socket.onmessage = function(event) {
+                console.log(`[message] Данные получены с сервера: ${event.data}`);
+            };
+
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+                } else {
+                    console.log('[close] Соединение прервано');
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.log(`[error] ${error.message}`);
+            };
+        });
+    </script>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+</body>
+</html>

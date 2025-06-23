@@ -1,0 +1,17 @@
+<div style="margin-left: {% if comment.parent %}20px{% endif %};">
+  <p><strong>{{ comment.author }}</strong> said:</p>
+  <p>{{ comment.text }}</p>
+  <p><em>{{ comment.created_at }}</em></p>
+  
+  <a href="#" onclick="document.getElementById('reply-form-{{ comment.id }}').style.display='block'; return false;">Reply</a>
+  <form method="post" action="{% url 'post-detail' comment.post.pk %}" id="reply-form-{{ comment.id }}" style="display:none;">
+    {% csrf_token %}
+    {{ comment_form.as_p }}
+    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+    <button type="submit">Reply</button>
+  </form>
+  
+  {% for reply in comment.get_replies %}
+    {% include "blog/comment.html" with comment=reply %}
+  {% endfor %}
+</div>

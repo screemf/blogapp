@@ -1,0 +1,16 @@
+{% extends "blogapp/base.html" %}
+
+{% block title %}
+    <h1>Профиль пользователя {{ user.username }}</h1>
+{% endblock %}
+
+{% block content %}
+<p>Имя: {{ user.username }}</p>
+<p>Email: {{ user.email }}</p>
+    <p>Обо мне: {{ profile.about_me }}</p>
+<p>Статус: {{ profile.marital_status }}</p>
+    <p>Хобии: {{ profile.hobbys }}</p>
+
+
+
+{% endblock %}

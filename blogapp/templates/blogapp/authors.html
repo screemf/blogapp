@@ -1,0 +1,27 @@
+{%  extends 'blogapp/base.html' %}
+
+{%  block title %}
+    {{ title }}
+{%  endblock %}
+{% block content %}
+{% for author in authors %}
+    <p><a href = "{% url 'author' author.id %}"> {{ author.name }} </a> </p>
+    <p>{{ author.age }} {{ author.email }}</p>
+    <p>{{ author.bio }}</p>
+    <p><a href = "{% url 'author_update_form' author.id %}"> Редактировать </a> </p>
+     <p>{{ author.is_verified }}</p>
+    <form action="{% url 'toggle_verified' author.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit">
+            {% if author.is_verified %}
+                Убрать верификацию
+            {% else %}
+                Подтвердить
+            {% endif %}
+        </button>
+    </form>
+
+    {% endfor %}
+
+
+{% endblock %}

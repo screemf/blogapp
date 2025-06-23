@@ -1,0 +1,85 @@
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+{%  extends 'blogapp/base.html' %}
+<head>
+    <title>Посты</title>
+    {% load static %}
+      <link rel="stylesheet" type="text/css" href="{% static 'css/dark-theme.css' %}">
+</head>
+{% block content %}
+<body>
+    <header>
+        <h1>Посты</h1>
+    </header>
+    <div class="container">
+        {% for post in posts %}
+        <div class="post">
+             <a href="{% url 'post' post.pk %}">{{ post.title }}</a>
+            <p class="post-content">{{ post.content }}</p>
+            <p class="post-meta">Posted on {{ post.created_at }}</p>
+
+
+           {% if post.images.exists %}
+            {% for image in post.images.all %}
+                <img src="{{ image.image.url }}" alt="Post Image" class="post-image">
+            {% endfor %}
+        {% else %}
+            <p>Этот пост не содержит изображений</p>
+        {% endif %}
+
+           <button class="like-post" data-url="{% url 'like_post' post.pk %}">{{ post.likes }} Like</button>
+        </div>
+        {% endfor %}
+    </div>
+   <script>
+        $(document).ready(function() {
+            $('.like-post').on('click', function() {
+                const url = $(this).data('url');
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        console.log(response);
+                        $(this).text(response.likes + ' Like');
+                    }.bind(this),
+                    error: function(xhr, status, error) {
+                        console.error('Ошибка запроса: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+ <script>
+
+        const socket = new WebSocket('ws://localhost:8000/ws/posts/');
+
+        socket.onopen = function(e) {
+            console.log("[open] Соединение установлено");
+        };
+
+        socket.onmessage = function(event) {
+            console.log(`[message] Данные получены с сервера: ${event.data}`);
+            alert(`Новое сообщение: ${event.data}`);
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+            } else {
+                console.log('[close] Соединение прервано');
+            }
+        };
+
+        socket.onerror = function(error) {
+            console.error(`[error] ${error.message}`);
+        };
+    </script>
+</body>
+</html>
+
+</body>
+
+ {% endblock %}

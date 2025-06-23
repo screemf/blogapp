@@ -1,0 +1,70 @@
+<!-- comment.html -->
+ <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% load comment_extras %}
+<div class="comment" style="margin-left: {{ comment.level|get_comment_indent }}px;">
+    <p><strong>{{ comment.author.username }}</strong> - {{ comment.created_at }}</p>
+    <p>{{ comment.text }}</p>
+    <button class="reply-btn" data-id="{{ comment.id }}">Ответить</button>
+ <button class="like-comment" data-id="{{ comment.id }}" data-url="{% url 'like_comment' comment.id %}">{{ comment.likes }} Лайк</button>
+    {% if comment.author == user %}
+        <button class="delete-comment" data-id="{{ comment.id }}" data-url="{% url 'delete_comment' comment.id %}">Удалить</button>
+    {% endif %}
+    {% for reply in comment.replies.all %}
+        {% include 'blog/comment.html' with comment=reply recursive=True  %}
+    {% endfor %}
+</div>
+<script>
+    $(document).ready(function() {
+        $('.like-comment').click(function() {
+            const url = $(this).data('url');
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                 success: function(response) {
+                        $(this).text(response.likes + ' Like');
+                    }.bind(this),
+                    error: function(xhr, status, error) {
+                        console.error('Ошибка запроса: ' + error);
+                    }
+            });
+        });
+    });
+     $('.delete-comment').click(function() {
+             {
+                const url = $(this).data('url');
+
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.message);
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Ошибка удаления');
+        }
+                });
+            }
+    });
+
+document.querySelectorAll('.reply-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        document.getElementById('parent-id').value = this.getAttribute('data-id');
+        const form = document.getElementById('comment-form');
+        const parentComment = button.parentElement;
+        parentComment.appendChild(form);
+        form.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+</script>

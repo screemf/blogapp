@@ -1,0 +1,17 @@
+{%  extends 'blogapp/base.html' %}
+
+{% block title %}
+    <h1>Удалить</h1>
+
+
+{% endblock %}
+
+{% block content %}
+
+    <form  method="post">
+        {% csrf_token%}
+        {{ form.as_p }}
+        <input type="submit" value="Удалить">
+        <a href="{% url 'posts' %}">Отмена</a>
+    </form>
+{% endblock %}
