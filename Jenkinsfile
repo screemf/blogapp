@@ -14,7 +14,7 @@ pipeline {
                     // Запускаем контейнер (исправленный вариант)
                     sh '''docker run -d \
                         --name django-blogapp-container \
-                        -p 8001:8000 \
+                        -p 8000:8000 \
                         django-blogapp'''
                 }
             }
