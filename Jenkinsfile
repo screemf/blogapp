@@ -15,6 +15,22 @@ pipeline {
             }
         }
 
+        stage('Cleanup Port') {
+            steps {
+                script {
+                    sh """
+                        # Остановка контейнеров использующих порт 8000
+                        docker ps --format '{{.ID}} {{.Ports}}' | grep ':8000' | awk '{print \$1}' | xargs -r docker stop || true
+
+                        # Освобождение порта 8000
+                        echo "Очистка порта 8000..."
+                        sudo lsof -i :8000 | awk 'NR!=1 {print \$2}' | xargs -r sudo kill -9 || true
+                        sudo netstat -tulnp | grep ':8000' | awk '{print \$7}' | cut -d'/' -f1 | xargs -r sudo kill -9 || true
+                    """
+                }
+            }
+        }
+
         stage('Prepare Environment') {
             steps {
                 script {
@@ -47,18 +63,13 @@ pipeline {
                         echo "Ожидание запуска блога (30 секунд)..."
                         sleep 30
 
-                        # Проверка состояния
-                        echo "=== Состояние контейнера ==="
-                        docker ps -a --filter "name=blog-container"
-
-                        # Проверка логов
-                        echo "=== Последние логи ==="
-                        docker logs --tail 20 blog-container || echo "Логи недоступны"
+                        # Проверка состояния порта
+                        echo "=== Проверка порта 8000 ==="
+                        sudo lsof -i :8000 || echo "Порт 8000 свободен"
+                        docker port blog-container
 
                         # Проверка доступности
                         echo "=== Проверка доступности ==="
-                        echo "URL: ${LOGIN_URL}"
-
                         HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" ${LOGIN_URL} || echo "500")
 
                         if [ "\$HTTP_STATUS" -eq "200" ]; then
@@ -77,7 +88,6 @@ pipeline {
     post {
         always {
             script {
-                // Сохранение логов и очистка
                 sh """
                     docker logs blog-container --tail 200 > blog.log 2>&1 || true
                     docker stop blog-container || true
@@ -86,14 +96,6 @@ pipeline {
                 """
                 archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
             }
-        }
-
-        success {
-            echo "Блог успешно запущен и доступен по адресу: ${LOGIN_URL}"
-        }
-
-        failure {
-            echo "Ошибка при запуске блога. Проверьте логи для диагностики."
         }
     }
 }
