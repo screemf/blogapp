@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/ваш-репозиторий.git'  // Укажите ваш репозиторий
+                git 'https://github.com//screemf/blogapp.git'  // Укажите ваш репозиторий
             }
         }
 
