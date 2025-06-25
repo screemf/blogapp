@@ -2,11 +2,14 @@ pipeline {
     agent any
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        BLOG_IMAGE = "screemf/django_project"  # Образ с Django-приложением
-        TEST_IMAGE = "screemf/my-app"         # Образ с тестами
+        /* Образ с Django-приложением */
+        BLOG_IMAGE = "screemf/django_project"
+        /* Образ с тестами */
+        TEST_IMAGE = "screemf/my-app"
         NETWORK_NAME = 'blog-network'
         BLOG_PORT = '8005'
-        BLOG_URL = "http://blog-container:8000/blog/home"  # Полный URL для проверки
+        /* Полный URL для проверки */
+        BLOG_URL = "http://blog-container:8000/blog/home"
     }
 
     stages {
@@ -20,7 +23,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Исправляем requirements.txt
+                        # Исправляем requirements.txt внутри контейнера
                         sed -i 's/cffi==1.15./cffi==1.15.0/' requirements.txt
                         echo "Проверка исправленного requirements.txt:"
                         grep cffi requirements.txt
@@ -57,15 +60,15 @@ pipeline {
                         echo "Ожидание запуска блога..."
                         sleep 30
 
-                        # Проверка логов блога
+                        /* Проверка логов блога */
                         echo "Логи блога:"
                         docker logs blog-container --tail 20
 
-                        # Проверка доступности
+                        /* Проверка доступности */
                         echo "Проверка доступности блога по URL: ${BLOG_URL}"
                         docker exec blog-container curl -sSf ${BLOG_URL} || echo "Блог не доступен"
 
-                        # Альтернативная проверка с хоста
+                        /* Альтернативная проверка с хоста */
                         curl --retry 5 --retry-delay 5 --retry-connrefused \
                              -f "http://localhost:${BLOG_PORT}/blog/home" || echo "Внешняя проверка не удалась"
                     """
