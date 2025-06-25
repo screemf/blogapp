@@ -1,5 +1,5 @@
 from .models import Post, Comment
-from celery_my import shared_task
+from celery import shared_task
 
 
 

@@ -6,7 +6,7 @@ autobahn==24.4.2
 Automat==24.8.1
 billiard==4.2.1
 celery==5.4.0
-cffi==1.15.0
+cffi==1.15.
 channels==4.2.0
 channels_redis==4.2.1
 click==8.1.7
