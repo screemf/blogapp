@@ -6,8 +6,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-#sys.path.append(os.path.abspath(r'D:/Users/scree/PycharmProjects/djangoProject'))
-#os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangoProject.settings')
+#sys.path.append(os.path.abspath(r'D:/Users/scree/PycharmProjects/project_config'))
+#os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project_config.settings')
 from blogapp.models import Post, Comment
 
 

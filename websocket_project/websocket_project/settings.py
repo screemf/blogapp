@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-#blogapp_path = os.path.abspath(r'D:/Users/scree/PycharmProjects/djangoProject/blogapp')
+#blogapp_path = os.path.abspath(r'D:/Users/scree/PycharmProjects/project_config/blogapp')
 #if blogapp_path not in sys.path:
    # sys.path.append(blogapp_path)
 
