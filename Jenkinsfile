@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm  // Получаем исходный код из репозитория
+                checkout scm
             }
         }
 
@@ -38,9 +38,21 @@ pipeline {
                             --network ${NETWORK_NAME} \
                             -p ${BLOG_PORT}:8000 \
                             ${BLOG_IMAGE}:latest
-                        sleep 15
-                        curl -f http://localhost:${BLOG_PORT} || true
+                        sleep 20  # Увеличено время ожидания
+                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || true
                     """
+                }
+            }
+        }
+
+        stage('Fix Requirements') {
+            steps {
+                script {
+                    sh '''
+                        # Исправляем ошибку в requirements.txt
+                        sed -i 's/cffi==1.15./cffi==1.15.0/' requirements.txt
+                        cat requirements.txt  # Для проверки
+                    '''
                 }
             }
         }
@@ -49,14 +61,14 @@ pipeline {
             steps {
                 script {
                     sh """
-                        # Копируем тесты в контейнер
                         docker run --rm \
                             --name test-container \
                             --network ${NETWORK_NAME} \
                             -e TEST_URL=http://blog-container:8000 \
                             -v ${WORKSPACE}:/app \
+                            -w /app \
                             ${TEST_IMAGE}:latest \
-                            sh -c 'cd /app && \
+                            sh -c 'pip install --upgrade pip && \
                                   pip install -r requirements.txt && \
                                   pytest Auth_test.py Users_test.py registr_test.py Post_detail_test.py Post_test.py WS_test.py --alluredir=./allure-results'
                     """
@@ -67,27 +79,18 @@ pipeline {
         stage('Allure Report') {
             steps {
                 script {
-                    // Убедимся, что директория существует
                     sh 'mkdir -p allure-report'
-
-                    // Генерируем отчет Allure
                     sh """
                         docker run --rm \
                             -v ${WORKSPACE}/allure-results:/allure-results \
                             -v ${WORKSPACE}/allure-report:/allure-report \
                             allureapi/allure:2.13.8 \
-                            allure generate /allure-results -o /allure-report
+                            allure generate /allure-results -o /allure-report --clean
                     """
-
-                    // Публикуем отчет
                     publishHTML(target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: false,
-                        keepAll: true,
                         reportDir: 'allure-report',
                         reportFiles: 'index.html',
-                        reportName: 'Allure Report',
-                        reportTitles: ''
+                        reportName: 'Allure Report'
                     ])
                 }
             }
@@ -100,12 +103,10 @@ pipeline {
                 node {
                     sh "docker logs blog-container --tail 100 > blog.log 2>&1 || true"
                     archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
                     sh "docker stop blog-container || true"
                     sh "docker rm blog-container || true"
                     sh "docker network rm ${NETWORK_NAME} || true"
-
-                    // Сохраняем результаты тестов
-                    archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
                 }
             }
         }
