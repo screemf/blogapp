@@ -5,21 +5,20 @@ pipeline {
         BLOG_IMAGE = "screemf/django_project"
         TEST_IMAGE = "screemf/my-app"
         NETWORK_NAME = 'blog-network'
-        // Динамическое определение свободного порта
-        BLOG_PORT = sh(script: "comm -23 <(seq 8000 8100 | sort) <(ss -tan | awk '{print $4}' | cut -d':' -f2 | sort -u) | head -n 1", returnStdout: true).trim()
+        // Используем фиксированный порт с проверкой доступности
+        BLOG_PORT = findAvailablePort(8000, 8100)
     }
     stages {
         stage('Prepare Environment') {
             steps {
                 script {
-                    // Очистка предыдущих контейнеров
-                    sh '''
+                    sh """
                         docker stop blog-container test-container || true
                         docker rm blog-container test-container || true
                         docker network rm ${NETWORK_NAME} || true
                         docker network create ${NETWORK_NAME}
-                        echo "Выбран порт для блога: ${BLOG_PORT}"
-                    '''
+                        echo "Using port ${BLOG_PORT} for blog"
+                    """
                 }
             }
         }
@@ -50,7 +49,6 @@ pipeline {
                             --network ${NETWORK_NAME} \
                             -p ${BLOG_PORT}:8000 \
                             ${BLOG_IMAGE}:latest
-                        echo "Блог доступен на порту: ${BLOG_PORT}"
                         sleep 15
                         curl -f http://localhost:${BLOG_PORT} || true
                     """
@@ -85,4 +83,17 @@ pipeline {
             sh 'docker logout'
         }
     }
+}
+
+// Функция для поиска свободного порта
+def findAvailablePort(startPort, endPort) {
+    def port = startPort
+    while (port <= endPort) {
+        def result = sh(script: "netstat -tuln | grep ':${port}' || true", returnStatus: true)
+        if (result != 0) {
+            return port.toString()
+        }
+        port++
+    }
+    throw new Exception("No available ports between ${startPort} and ${endPort}")
 }
