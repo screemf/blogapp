@@ -12,13 +12,26 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                // Упрощенная команда для просмотра структуры
+                // Проверка структуры проекта
                 sh '''
                     echo "Структура проекта:"
                     ls -la
-                    echo "Дерево каталогов (первые 2 уровня):"
-                    find . -maxdepth 2 -type d | sed -e "s|[^-][^/]*/|--|g" -e "s|--| |g" -e "s|-| |g"
+                    echo "Дерево каталогов:"
+                    find . -maxdepth 2 -type d | sed -e "s|[^-][^/]*/|  |g"
                 '''
+            }
+        }
+
+        stage('Fix Requirements') {
+            steps {
+                script {
+                    // Автоматическое исправление requirements.txt
+                    sh '''
+                        sed -i 's/cffi==1.15./cffi==1.15.0/' requirements.txt
+                        echo "Проверка исправленного requirements.txt:"
+                        cat requirements.txt | grep cffi
+                    '''
+                }
             }
         }
 
@@ -44,9 +57,12 @@ pipeline {
                             --name blog-container \
                             --network ${NETWORK_NAME} \
                             -p ${BLOG_PORT}:8000 \
+                            -v ${WORKSPACE}/blogapp:/app \
                             ${BLOG_IMAGE}:latest
-                        sleep 25
-                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || echo "Blog check failed"
+                        sleep 30
+                        echo "Проверка работы блога:"
+                        docker logs blog-container --tail 20
+                        curl --retry 5 --retry-delay 5 --retry-connrefused -f http://localhost:${BLOG_PORT} || echo "Проверка блога не удалась"
                     """
                 }
             }
@@ -63,7 +79,8 @@ pipeline {
                             -v ${WORKSPACE}:/app \
                             -w /app \
                             ${TEST_IMAGE}:latest \
-                            sh -c 'pip install -r requirements.txt && \
+                            sh -c 'pip install --upgrade pip && \
+                                  pip install -r requirements.txt && \
                                   pytest Auth_test.py Users_test.py registr_test.py Post_detail_test.py Post_test.py WS_test.py \
                                   --alluredir=./allure-results'
                     """
@@ -99,6 +116,7 @@ pipeline {
                     sh "docker logs blog-container --tail 200 > blog.log 2>&1 || true"
                     archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
+
                     sh "docker stop blog-container || true"
                     sh "docker rm blog-container || true"
                     sh "docker network rm ${NETWORK_NAME} || true"
