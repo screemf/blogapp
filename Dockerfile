@@ -13,6 +13,9 @@ RUN apt-get update && \
 WORKDIR /app
 COPY . .
 
+# Устанавливаем переменные окружения
+ENV PYTHONPATH=/app
+
 # Устанавливаем Python-зависимости (включая Pillow)
 RUN pip install --no-cache-dir -r requirements.txt pillow && \
     python manage.py migrate --noinput
