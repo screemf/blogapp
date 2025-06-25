@@ -2,13 +2,10 @@ pipeline {
     agent any
     environment {
         DOCKER_REGISTRY = 'docker.io'
-        /* Образ с Django-приложением */
         BLOG_IMAGE = "screemf/django_project"
-        /* Образ с тестами */
         TEST_IMAGE = "screemf/my-app"
         NETWORK_NAME = 'blog-network'
         BLOG_PORT = '8005'
-        /* Полный URL для проверки */
         BLOG_URL = "http://blog-container:8000/blog/home"
     }
 
@@ -23,7 +20,6 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Исправляем requirements.txt внутри контейнера
                         sed -i 's/cffi==1.15./cffi==1.15.0/' requirements.txt
                         echo "Проверка исправленного requirements.txt:"
                         grep cffi requirements.txt
@@ -57,20 +53,17 @@ pipeline {
                             -v ${WORKSPACE}/blogapp:/app \
                             ${BLOG_IMAGE}:latest
 
-                        echo "Ожидание запуска блога..."
+                        echo "Ожидание запуска блога (30 секунд)..."
                         sleep 30
 
-                        /* Проверка логов блога */
-                        echo "Логи блога:"
-                        docker logs blog-container --tail 20
+                        echo "Проверка состояния контейнера:"
+                        docker ps -a | grep blog-container
 
-                        /* Проверка доступности */
-                        echo "Проверка доступности блога по URL: ${BLOG_URL}"
-                        docker exec blog-container curl -sSf ${BLOG_URL} || echo "Блог не доступен"
+                        echo "Последние 20 строк логов:"
+                        docker logs --tail 20 blog-container || echo "Не удалось получить логи"
 
-                        /* Альтернативная проверка с хоста */
-                        curl --retry 5 --retry-delay 5 --retry-connrefused \
-                             -f "http://localhost:${BLOG_PORT}/blog/home" || echo "Внешняя проверка не удалась"
+                        echo "Проверка доступности приложения:"
+                        docker exec blog-container curl -sSf ${BLOG_URL} || echo "Приложение не отвечает"
                     """
                 }
             }
@@ -90,7 +83,7 @@ pipeline {
                             ${TEST_IMAGE}:latest \
                             sh -c 'pip install --upgrade pip && \
                                   pip install -r requirements.txt && \
-                                  ls -la && \
+                                  echo "Содержимое /app:" && ls -la && \
                                   pytest Auth_test.py Users_test.py registr_test.py Post_detail_test.py Post_test.py WS_test.py \
                                   --alluredir=./allure-results'
                     """
