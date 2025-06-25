@@ -2,34 +2,30 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_NAME = "django-app"  // Имя образа
-        DOCKER_TAG = "latest"             // Тег образа
-        APP_PORT = "8000"                 // Порт приложения
+        DOCKER_IMAGE_NAME = "django-app"
+        DOCKER_TAG = "latest"
+        APP_PORT = "8000"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com//screemf/blogapp.git'  // Укажите ваш репозиторий
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],  // Указываем ветку main вместо master
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/screemf/blogapp.git',
+                        credentialsId: '701cac66-35b9-4c38-a20c-3ab0f09edd2e'  // Используйте ваш credentialsId
+                    ]]
+                ])
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Собираем Docker-образ из Dockerfile
                     docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_TAG}")
-                }
-            }
-        }
-
-        stage('Run Migrations') {
-            steps {
-                script {
-                    // Запускаем миграции внутри контейнера
-                    docker.image("${DOCKER_IMAGE_NAME}:${DOCKER_TAG}").inside {
-                        sh 'python manage.py migrate --noinput'
-                    }
                 }
             }
         }
@@ -37,11 +33,8 @@ pipeline {
         stage('Run App') {
             steps {
                 script {
-                    // Останавливаем старый контейнер (если есть)
                     sh "docker stop django-app || true"
                     sh "docker rm django-app || true"
-
-                    // Запускаем новый контейнер
                     sh """
                         docker run -d \
                             --name django-app \
@@ -55,12 +48,13 @@ pipeline {
 
     post {
         always {
-            // Логирование (опционально)
-            echo "Приложение запущено на порту ${APP_PORT}"
+            echo "Логи контейнера:"
+            sh "docker logs django-app --tail 50 || true"
         }
         failure {
-            // Уведомление о неудаче
-           echo "Приложение не запущено на порту ${APP_PORT}"
+            emailext body: 'Сборка провалена: ${BUILD_URL}',
+                      subject: 'FAILED: ${JOB_NAME}',
+                      to: 'dev-team@example.com'
         }
     }
 }
