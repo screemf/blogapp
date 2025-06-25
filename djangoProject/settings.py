@@ -36,7 +36,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 ALLOWED_HOSTS = []
 
 INTERNAL_IPS = [
-    '127.0.0.1',
+    'http://localhost',
 ]
 
 # Application definition
@@ -98,7 +98,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("http://localhost:8000", 6379)],
         },
     },
 }
