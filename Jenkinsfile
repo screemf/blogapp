@@ -2,68 +2,76 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_NAME = "django-app"
-        DOCKER_TAG = "latest"
-        APP_PORT = "8000"
-        APP_URL = "http://localhost:${APP_PORT}/blog/home"  // Добавляем целевой эндпоинт
+        // Настройки для blogapp (Django)
+        DJANGO_IMAGE = "django-blogapp"
+        DJANGO_CONTAINER = "django-blogapp-container"
+        DJANGO_PORT = "8000"
+        DJANGO_URL = "http://${DJANGO_CONTAINER}:${DJANGO_PORT}"  // Для доступа из сети контейнеров
+
+        // Настройки для avtest (автотесты)
+        AVTEST_IMAGE = "django-avtest"
+        AVTEST_CONTAINER = "django-avtest-container"
     }
 
     stages {
+        // 1. Забираем оба репозитория
         stage('Checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/screemf/blogapp.git',
-                        credentialsId: '701cac66-35b9-4c38-a20c-3ab0f09edd2e'
-                    ]]
-                ])
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_TAG}")
+                dir('blogapp') {
+                    git url: 'https://github.com/screemf/blogapp.git', branch: 'main'
+                }
+                dir('avtest') {
+                    git url: 'https://github.com/screemf/avtest.git', branch: 'main'
                 }
             }
         }
 
-        stage('Run App') {
+        // 2. Собираем оба Docker-образа
+        stage('Build Images') {
             steps {
                 script {
-                    sh "docker stop django-app || true"
-                    sh "docker rm django-app || true"
+                    // Собираем Django-приложение
+                    docker.build("${DJANGO_IMAGE}", "./blogapp")
+
+                    // Собираем образ с автотестами
+                    docker.build("${AVTEST_IMAGE}", "./avtest")
+                }
+            }
+        }
+
+        // 3. Запускаем Django-приложение в отдельной сети
+        stage('Run Django') {
+            steps {
+                script {
+                    sh "docker network create django-network || true"
                     sh """
                         docker run -d \
-                            --name django-app \
-                            -p ${APP_PORT}:8000 \
-                            ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                            --name ${DJANGO_CONTAINER} \
+                            --network django-network \
+                            -p ${DJANGO_PORT}:8000 \
+                            ${DJANGO_IMAGE}
                     """
+                    // Ждем, пока Django запустится
+                    sleep(time: 15, unit: 'SECONDS')
                 }
             }
         }
 
-        // Новый этап: проверка доступности /blog/home
-        stage('Check Endpoint') {
+        // 4. Запускаем автотесты (они подключаются к Django через сеть)
+        stage('Run Autotests') {
             steps {
                 script {
-                    timeout(time: 2, unit: 'MINUTES') {
-                        waitUntil {
-                            try {
-                                // Проверяем доступность эндпоинта через curl
-                                sh """
-                                    curl -f -s -o /dev/null -w '%{http_code}' ${APP_URL} | grep -q 200
-                                """
-                                echo "Эндпоинт ${APP_URL} доступен!"
-                                return true
-                            } catch (Exception e) {
-                                echo "Эндпоинт ${APP_URL} ещё не готов. Повторная попытка..."
-                                return false
-                            }
-                        }
+                    try {
+                        sh """
+                            docker run --rm \
+                                --name ${AVTEST_CONTAINER} \
+                                --network django-network \
+                                -e BASE_URL=${DJANGO_URL} \
+                                ${AVTEST_IMAGE}
+                        """
+                    } finally {
+                        // Сохраняем отчеты тестов (если Allure/JUnit)
+                        archiveArtifacts artifacts: '**/allure-results/**', allowEmptyArchive: true
                     }
                 }
             }
@@ -72,17 +80,20 @@ pipeline {
 
     post {
         always {
-            echo "Финальный статус:"
-            sh "docker logs django-app --tail 50 || true"
+            // Логи и очистка
+            sh "docker logs ${DJANGO_CONTAINER} --tail 100 || true"
+            sh "docker stop ${DJANGO_CONTAINER} ${AVTEST_CONTAINER} || true"
+            sh "docker rm ${DJANGO_CONTAINER} ${AVTEST_CONTAINER} || true"
+            sh "docker network rm django-network || true"
         }
         failure {
             emailext body: """
-                Сборка провалена: ${BUILD_URL}
-                Логи контейнера:
-                ${sh(script: "docker logs django-app --tail 100 2>&1 || true", returnStdout: true)}
+                Тесты провалились: ${BUILD_URL}
+                Логи Django:
+                ${sh(script: "docker logs ${DJANGO_CONTAINER} --tail 100 2>&1", returnStdout: true)}
             """,
             subject: "FAILED: ${JOB_NAME}",
-            to: 'dev-team@example.com'
+            to: 'your-team@example.com'
         }
     }
 }
