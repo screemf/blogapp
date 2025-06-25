@@ -20,7 +20,7 @@ pipeline {
                         docker run -d \
                             --name django-blogapp-container \
                             --network django-network \
-                            -p 8001:8000 \  # Используем другой порт
+                            -p 8000:8000 \  # Используем другой порт
                             django-blogapp
                     '''
                 }
