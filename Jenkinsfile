@@ -12,6 +12,13 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                // Просмотр структуры проекта
+                sh '''
+                    echo "Структура проекта:"
+                    ls -la
+                    echo "Содержимое папки:"
+                    find . -maxdepth 2 -type d | sed -e 's/[^-][^\/]*\//──/g' -e 's/──/ ├── /' -e 's/─/│/'
+                '''
             }
         }
 
@@ -38,21 +45,9 @@ pipeline {
                             --network ${NETWORK_NAME} \
                             -p ${BLOG_PORT}:8000 \
                             ${BLOG_IMAGE}:latest
-                        sleep 20  # Увеличено время ожидания
-                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || true
+                        sleep 25
+                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || echo "Проверка блога не удалась"
                     """
-                }
-            }
-        }
-
-        stage('Fix Requirements') {
-            steps {
-                script {
-                    sh '''
-                        # Исправляем ошибку в requirements.txt
-                        sed -i 's/cffi==1.15./cffi==1.15.0/' requirements.txt
-                        cat requirements.txt  # Для проверки
-                    '''
                 }
             }
         }
@@ -68,9 +63,9 @@ pipeline {
                             -v ${WORKSPACE}:/app \
                             -w /app \
                             ${TEST_IMAGE}:latest \
-                            sh -c 'pip install --upgrade pip && \
-                                  pip install -r requirements.txt && \
-                                  pytest Auth_test.py Users_test.py registr_test.py Post_detail_test.py Post_test.py WS_test.py --alluredir=./allure-results'
+                            sh -c 'pip install -r requirements.txt && \
+                                  pytest Auth_test.py Users_test.py registr_test.py Post_detail_test.py Post_test.py WS_test.py \
+                                  --alluredir=./allure-results'
                     """
                 }
             }
@@ -101,9 +96,12 @@ pipeline {
         always {
             script {
                 node {
-                    sh "docker logs blog-container --tail 100 > blog.log 2>&1 || true"
+                    // Сохраняем логи и артефакты
+                    sh "docker logs blog-container --tail 200 > blog.log 2>&1 || true"
                     archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
+
+                    // Очистка
                     sh "docker stop blog-container || true"
                     sh "docker rm blog-container || true"
                     sh "docker network rm ${NETWORK_NAME} || true"
