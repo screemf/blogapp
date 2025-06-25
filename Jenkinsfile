@@ -5,9 +5,11 @@ pipeline {
         BLOG_IMAGE = "screemf/django_project"
         TEST_IMAGE = "screemf/my-app"
         NETWORK_NAME = 'blog-network'
-        // Используем фиксированный порт с проверкой доступности
-        BLOG_PORT = findAvailablePort(8000, 8100)
+        // Фиксированные порты
+        BLOG_PORT = '8005'
+        TEST_PORT = '8006'
     }
+
     stages {
         stage('Prepare Environment') {
             steps {
@@ -17,7 +19,8 @@ pipeline {
                         docker rm blog-container test-container || true
                         docker network rm ${NETWORK_NAME} || true
                         docker network create ${NETWORK_NAME}
-                        echo "Using port ${BLOG_PORT} for blog"
+                        echo "Blog will use port ${BLOG_PORT}"
+                        echo "Tests will use port ${TEST_PORT}"
                     """
                 }
             }
@@ -64,6 +67,7 @@ pipeline {
                         docker run --rm \
                             --name test-container \
                             --network ${NETWORK_NAME} \
+                            -p ${TEST_PORT}:8000 \
                             -e TEST_URL=http://blog-container:8000 \
                             ${TEST_IMAGE}:latest
                     """
@@ -71,29 +75,21 @@ pipeline {
             }
         }
     }
+
     post {
         always {
-            sh "docker logs blog-container --tail 100 > blog.log 2>&1 || true"
-            sh "docker logs test-container --tail 100 > tests.log 2>&1 || true"
-            archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
+            script {
+                node {
+                    sh "docker logs blog-container --tail 100 > blog.log 2>&1 || true"
+                    sh "docker logs test-container --tail 100 > tests.log 2>&1 || true"
+                    archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
 
-            sh "docker stop blog-container test-container || true"
-            sh "docker rm blog-container test-container || true"
-            sh "docker network rm ${NETWORK_NAME} || true"
-            sh 'docker logout'
+                    sh "docker stop blog-container test-container || true"
+                    sh "docker rm blog-container test-container || true"
+                    sh "docker network rm ${NETWORK_NAME} || true"
+                    sh 'docker logout'
+                }
+            }
         }
     }
-}
-
-// Функция для поиска свободного порта
-def findAvailablePort(startPort, endPort) {
-    def port = startPort
-    while (port <= endPort) {
-        def result = sh(script: "netstat -tuln | grep ':${port}' || true", returnStatus: true)
-        if (result != 0) {
-            return port.toString()
-        }
-        port++
-    }
-    throw new Exception("No available ports between ${startPort} and ${endPort}")
 }
