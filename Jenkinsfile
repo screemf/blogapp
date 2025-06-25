@@ -12,12 +12,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                // Просмотр структуры проекта
+                // Упрощенная команда для просмотра структуры
                 sh '''
                     echo "Структура проекта:"
                     ls -la
-                    echo "Содержимое папки:"
-                    find . -maxdepth 2 -type d | sed -e 's/[^-][^\/]*\//──/g' -e 's/──/ ├── /' -e 's/─/│/'
+                    echo "Дерево каталогов (первые 2 уровня):"
+                    find . -maxdepth 2 -type d | sed -e "s|[^-][^/]*/|--|g" -e "s|--| |g" -e "s|-| |g"
                 '''
             }
         }
@@ -46,7 +46,7 @@ pipeline {
                             -p ${BLOG_PORT}:8000 \
                             ${BLOG_IMAGE}:latest
                         sleep 25
-                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || echo "Проверка блога не удалась"
+                        curl --retry 3 --retry-delay 5 -f http://localhost:${BLOG_PORT} || echo "Blog check failed"
                     """
                 }
             }
@@ -96,12 +96,9 @@ pipeline {
         always {
             script {
                 node {
-                    // Сохраняем логи и артефакты
                     sh "docker logs blog-container --tail 200 > blog.log 2>&1 || true"
                     archiveArtifacts artifacts: '*.log', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'allure-results/**', allowEmptyArchive: true
-
-                    // Очистка
                     sh "docker stop blog-container || true"
                     sh "docker rm blog-container || true"
                     sh "docker network rm ${NETWORK_NAME} || true"
