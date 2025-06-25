@@ -44,13 +44,26 @@ pipeline {
             steps {
                 script {
                     sh "docker network create django-network || true"
-                    sh """
-                        docker run -d \
-                            --name ${DJANGO_CONTAINER} \
-                            --network django-network \
-                            -p ${DJANGO_PORT}:8000 \
-                            ${DJANGO_IMAGE}
-                    """
+                    // Сначала пытаемся использовать готовый образ
+                    try {
+                        docker.image('screemf/django_project:latest').pull()
+                        docker.run(
+                            image: 'screemf/django_project:latest',
+                            name: "${DJANGO_CONTAINER}",
+                            ports: ["${DJANGO_PORT}:8000"],
+                            network: 'django-network',
+                            detach: true
+                        )
+                    } catch (Exception e) {
+                        echo "Не удалось запустить готовый образ, используем собранный: ${e.toString()}"
+                        sh """
+                            docker run -d \
+                                --name ${DJANGO_CONTAINER} \
+                                --network django-network \
+                                -p ${DJANGO_PORT}:8000 \
+                                ${DJANGO_IMAGE}
+                        """
+                    }
                     // Ждем, пока Django запустится
                     sleep(time: 15, unit: 'SECONDS')
                 }
