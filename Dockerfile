@@ -1,22 +1,23 @@
-# Используем официальный образ Python с конкретной версией
-FROM python:3.11-bookworm  # или python:3.11-slim для более легкого образа
+# Используем официальный образ Python
+FROM python:3.11
 
-# 1. Устанавливаем системные зависимости
+# 1. Устанавливаем ВСЕ необходимые зависимости
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
+    gcc \
+    python3-dev \
     libffi-dev \
     libssl-dev \
-    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Обновляем pip до последней версии
-RUN pip install --upgrade pip
+# 2. Обновляем pip (это важно!)
+RUN pip install --upgrade pip setuptools wheel
 
-# 3. Устанавливаем рабочую директорию
+# 3. Создаем и переходим в рабочую директорию
 WORKDIR /app
 
-# 4. Сначала копируем только requirements.txt для кэширования
+# 4. Сначала копируем только requirements.txt
 COPY requirements.txt .
 
 # 5. Устанавливаем зависимости
@@ -25,5 +26,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 6. Копируем остальные файлы проекта
 COPY . .
 
-# 7. Команда для запуска (замените на свою)
+# 7. Команда для запуска
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
