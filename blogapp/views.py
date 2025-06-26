@@ -417,3 +417,28 @@ def upload_image_to_post(request, post_id):
         else:
             return HttpResponse("Post not found.", status=404)
     return HttpResponse("Invalid request.", status=400)
+
+def healthcheck(request):
+    # Проверка базы данных
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        db_status = True
+    except Exception:
+        db_status = False
+
+    # Проверка Redis (если используется)
+    redis_status = True
+    if 'redis' in settings.CACHES:
+        try:
+            redis = Redis.from_url(settings.CACHES['default']['LOCATION'])
+            redis.ping()
+        except Exception:
+            redis_status = False
+
+    status = 200 if db_status and redis_status else 500
+    return JsonResponse({
+        'status': 'ok' if status == 200 else 'error',
+        'db': db_status,
+        'redis': redis_status if 'redis' in settings.CACHES else 'not_configured'
+    }, status=status)

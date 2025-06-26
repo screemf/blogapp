@@ -1,0 +1,64 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run migrations
+      run: python manage.py migrate
+
+    - name: Run tests
+      run: python manage.py test
+
+    - name: Build Docker image
+      run: docker build -t django-blogapp .
+
+    - name: Run container and check health
+      run: |
+        docker run -d -p 8000:8000 --name django-app django-blogapp
+        sleep 15  # Wait for Django to start
+        docker ps -a  # Show container status including healthcheck
+        curl -v http://localhost:8000/healthcheck/
+        docker logs django-app
+      if: always()  # Run this step even if previous steps fail
+
+    - name: Cleanup
+      run: |
+        docker stop django-app || true
+        docker rm django-app || true
+      if: always()  # Cleanup even if previous steps fail
+

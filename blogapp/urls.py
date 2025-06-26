@@ -24,4 +24,6 @@ urlpatterns = [
     path('like-comment/<int:comment_id>/', views.like_comment, name='like_comment'),
     path('delete-comment/<int:comment_id>/', delete_comment, name='delete_comment'),
     path('toggle-verified/<int:author_id>/', toggle_verified, name='toggle_verified'),
+    path('healthcheck/', views.healthcheck, name='healthcheck'),
+
 ]
