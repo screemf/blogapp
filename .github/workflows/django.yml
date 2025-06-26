@@ -84,7 +84,7 @@ jobs:
           selenium \
           allure-pytest
         
-        # Fixed Allure installation
+        # Установка Allure локально
         wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
         mkdir -p allure
         tar -xzf allure-2.27.0.tgz -C allure --strip-components=1
@@ -97,11 +97,21 @@ jobs:
         
         echo "Running test suite 2"
         python -m pytest Auth_test.py Users_test.py registr_test.py --alluredir=./allure-results || true
-        
-        if [ -d "./allure-results" ]; then
-          ./../allure/bin/allure generate ./allure-results -o ./allure-report --clean
-          mv ./allure-report ../../allure-report
-        fi
+
+    - name: Generate Allure report
+      if: always()
+      run: |
+        cd avtest/Test
+        ../allure/bin/allure generate ./allure-results -o ./allure-report --clean
+        mv ./allure-report ../../allure-report
+
+    - name: Upload Allure results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results
+        path: avtest/Test/allure-results
+        retention-days: 5
 
     - name: Upload Allure report
       if: always()
@@ -110,6 +120,12 @@ jobs:
         name: allure-report
         path: allure-report
         retention-days: 5
+
+    - name: Serve Allure report
+      if: always()
+      run: |
+        cd avtest/Test
+        ../allure/bin/allure serve allure-results
 
     - name: Cleanup
       run: |
