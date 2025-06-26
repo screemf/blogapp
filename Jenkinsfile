@@ -66,7 +66,7 @@ pipeline {
                         // Запускаем контейнер из существующего образа my-app
                         sh '''docker run -d \
                             --name avtest-container \
-                            -p 8080:8080 \
+                            -p 8010:8010 \
                             my-app'''
 
                         echo "avtest (my-app) container started successfully"
