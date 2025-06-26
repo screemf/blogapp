@@ -51,7 +51,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install beautifulsoup4 webdriver-manager
+        pip install beautifulsoup4 webdriver-manager pillow
 
     - name: Run migrations
       run: python manage.py migrate
@@ -74,17 +74,20 @@ jobs:
         git clone https://github.com/screemf/avtest.git
         cd avtest
         
+        # Создаем тестовое изображение
+        mkdir -p Test/test_data
+        python -c "from PIL import Image; Image.new('RGB', (100, 100), color='red').save('Test/test_data/test_image.jpg')"
+        
         pip install \
           opencv-python \
           numpy \
-          pillow \
           pytest \
           pytest-xdist \
           requests \
           selenium \
           allure-pytest
         
-        # Установка Allure локально
+        # Установка Allure
         wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
         mkdir -p allure
         tar -xzf allure-2.27.0.tgz -C allure --strip-components=1
@@ -102,9 +105,9 @@ jobs:
       if: always()
       run: |
         cd avtest/Test
-        ../allure/bin/allure generate ./allure-results -o ./allure-report --clean
-        echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0; url=allure-report/index.html'></head></html>" > ../../allure-report/index.html
-        mv ./allure-report ../../allure-report
+        mkdir -p ../../allure-report
+        ../allure/bin/allure generate ./allure-results -o ../../allure-report --clean
+        echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0; url=index.html'></head></html>" > ../../allure-report/redirect.html
 
     - name: Upload Allure report
       if: always()
