@@ -1,19 +1,24 @@
-FROM python:3.11-slim
+# Используем официальный образ Python
+FROM python:3.9-slim  # или python:3.9 для полной версии
 
-# Установка curl для healthcheck
+# 1. Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     build-essential \
     libssl-dev \
     libffi-dev \
-    python3-dev
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+# 2. Устанавливаем рабочую директорию
 WORKDIR /app
+
+# 3. Копируем и устанавливаем зависимости
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 4. Копируем остальные файлы проекта
 COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/healthcheck/ || exit 1
-
+# 5. Команда для запуска (замените на свою)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
