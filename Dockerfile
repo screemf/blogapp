@@ -8,6 +8,8 @@ RUN apt-get update && \
     python3-dev \
     libffi-dev \
     libssl-dev \
+    && apt-get autoclean \
+    && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Обновляем pip

@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                deleteDir()
+            sh 'ls -la'
             }
         }
 
@@ -55,7 +55,7 @@ pipeline {
                 }
             }
         }
-
+#проверять жив ли сервер хелс чек
         stage('Run avtest (my-app)') {
             steps {
                 script {
