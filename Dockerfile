@@ -1,28 +1,15 @@
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
-    libffi-dev \
-    libjpeg-dev \
-    zlib1g-dev \
+# Установка инструментов для диагностики
+RUN apt-get update && apt-get install -y \
+    net-tools \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
 
-# Устанавливаем переменные окружения
-ENV PYTHONPATH=/app
-
-# Устанавливаем Python-зависимости (включая Pillow)
-RUN pip install --no-cache-dir -r requirements.txt pillow && \
-
-RUN python manage.py migrate --noinput
-
-
-# Очищаем build-зависимости (опционально)
-RUN apt-get purge -y --auto-remove gcc python3-dev libffi-dev
+RUN pip install --no-cache-dir -r requirements.txt
+RUN mkdir -p /app/logs
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--noreload"]
