@@ -1,31 +1,30 @@
-# Используем официальный образ Python с конкретной версией
-FROM python:3.11.6-bookworm
+# Используем официальный образ Python
+FROM python:3.11-slim
 
-# 1. Устанавливаем системные зависимости
+# 1. Устанавливаем системные зависимости ДО установки пакетов
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential \
     gcc \
     python3-dev \
     libffi-dev \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Обновляем pip и setuptools
-RUN pip install --upgrade pip setuptools wheel
+# 2. Обновляем pip
+RUN pip install --upgrade pip
 
 # 3. Устанавливаем рабочую директорию
 WORKDIR /app
 
-# 4. Копируем requirements.txt отдельно для кэширования
+# 4. Сначала копируем только requirements.txt
 COPY requirements.txt .
 
-# 5. Устанавливаем зависимости (сначала cffi отдельно)
-RUN pip install --no-cache-dir cffi==1.16.0 && \
-    pip install --no-cache-dir -r requirements.txt
+# 5. Устанавливаем зависимости
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Копируем остальные файлы проекта
+# 6. Копируем остальные файлы
 COPY . .
+
 
 # 7. Команда для запуска
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
