@@ -1,9 +1,11 @@
 FROM python:3.11-slim
 
 # Установка curl для healthcheck
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev
 
 WORKDIR /app
 COPY . .
