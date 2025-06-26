@@ -25,6 +25,7 @@ jobs:
         ports:
           - 6379:6379
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
 
@@ -32,6 +33,11 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc python3-dev libffi-dev libssl-dev ffmpeg
 
     - name: Install dependencies
       run: |
@@ -47,18 +53,40 @@ jobs:
     - name: Build Docker image
       run: docker build -t django-blogapp .
 
-    - name: Run container and check health
+    - name: Run Django container
       run: |
         docker run -d -p 8000:8000 --name django-app django-blogapp
         sleep 15  # Wait for Django to start
-        docker ps -a  # Show container status including healthcheck
+        docker ps -a
         curl -v http://localhost:8000/healthcheck/
-        docker logs django-app
-      if: always()  # Run this step even if previous steps fail
+
+    - name: Setup and run avtest
+      run: |
+        # Клонируем репозиторий avtest
+        git clone https://github.com/screemf/avtest.git
+        cd avtest
+        
+        # Устанавливаем зависимости (если есть requirements.txt)
+        if [ -f "requirements.txt" ]; then
+          pip install -r requirements.txt
+        else
+          pip install opencv-python numpy pillow
+        fi
+        
+        # Запускаем avtest (адаптируйте команду под ваш случай)
+        python runner.py --server-url http://localhost:8000
+        
+        # Проверяем результат (пример)
+        if [ -f "output.json" ]; then
+          echo "AVTest completed successfully"
+          cat output.json
+        else
+          echo "AVTest failed to produce output"
+          exit 1
+        fi
 
     - name: Cleanup
       run: |
         docker stop django-app || true
         docker rm django-app || true
-      if: always()  # Cleanup even if previous steps fail
-
+      if: always()
