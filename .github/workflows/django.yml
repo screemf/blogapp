@@ -43,12 +43,15 @@ jobs:
           libffi-dev \
           libssl-dev \
           ffmpeg \
-          allure
+          chromium-browser \
+          chromium-chromedriver \
+          bsdtar
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install beautifulsoup4  # Для тестов Post_test.py
 
     - name: Run migrations
       run: python manage.py migrate
@@ -78,9 +81,17 @@ jobs:
           numpy \
           pillow \
           pytest \
-          allure-pytest \
           pytest-xdist \
-          requests
+          requests \
+          selenium \
+          webdriver-manager \
+          beautifulsoup4 \
+          allure-pytest
+        
+        # Install Allure CLI
+        wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
+        bsdtar -xzf allure-2.27.0.tgz -C /usr/local --strip-components=1
+        echo "/usr/local/bin" >> $GITHUB_PATH
         
         # Go to tests directory
         cd Test
@@ -89,12 +100,12 @@ jobs:
         echo "Test files available:"
         ls -la
         
-        # Run test groups
+        # Run test groups with WebDriver Manager
         echo "Running test suite 1 (WS, Post, Post Detail)"
-        pytest WS_test.py Post_test.py Post_detail_test.py -n 3 --alluredir=./allure-results || echo "Test suite 1 completed with errors"
+        python -m pytest WS_test.py Post_test.py Post_detail_test.py -n 3 --alluredir=./allure-results || echo "Test suite 1 completed with errors"
         
         echo "Running test suite 2 (Auth, Users, Registration)"
-        pytest Auth_test.py Users_test.py registr_test.py --alluredir=./allure-results || echo "Test suite 2 completed with errors"
+        python -m pytest Auth_test.py Users_test.py registr_test.py --alluredir=./allure-results || echo "Test suite 2 completed with errors"
         
         # Generate Allure report if results exist
         if [ -d "./allure-results" ]; then
