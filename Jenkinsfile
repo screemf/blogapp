@@ -55,7 +55,6 @@ pipeline {
                 }
             }
         }
-#проверять жив ли сервер хелс чек
         stage('Run avtest (my-app)') {
             steps {
                 script {
