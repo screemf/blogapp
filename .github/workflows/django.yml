@@ -45,13 +45,13 @@ jobs:
           ffmpeg \
           chromium-browser \
           chromium-chromedriver \
-          bsdtar
+          libarchive-tools  # Замена bsdtar
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install beautifulsoup4  # Для тестов Post_test.py
+        pip install beautifulsoup4 webdriver-manager
 
     - name: Run migrations
       run: python manage.py migrate
@@ -65,17 +65,15 @@ jobs:
     - name: Run Django container
       run: |
         docker run -d -p 8000:8000 --name django-app django-blogapp
-        sleep 15  # Wait for Django to start
+        sleep 15
         docker ps -a
         curl -v http://localhost:8000/healthcheck/
 
     - name: Setup and run AVTest
       run: |
-        # Clone AVTest repository
         git clone https://github.com/screemf/avtest.git
         cd avtest
         
-        # Install test dependencies
         pip install \
           opencv-python \
           numpy \
@@ -84,42 +82,25 @@ jobs:
           pytest-xdist \
           requests \
           selenium \
-          webdriver-manager \
-          beautifulsoup4 \
           allure-pytest
         
-        # Install Allure CLI
+        # Установка Allure с использованием tar (вместо bsdtar)
         wget https://github.com/allure-framework/allure2/releases/download/2.27.0/allure-2.27.0.tgz
-        bsdtar -xzf allure-2.27.0.tgz -C /usr/local --strip-components=1
+        tar -xzf allure-2.27.0.tgz -C /usr/local --strip-components=1
         echo "/usr/local/bin" >> $GITHUB_PATH
         
-        # Go to tests directory
         cd Test
         
-        # Debug: Show test files
-        echo "Test files available:"
-        ls -la
+        echo "Running test suite 1"
+        python -m pytest WS_test.py Post_test.py Post_detail_test.py -n 3 --alluredir=./allure-results || true
         
-        # Run test groups with WebDriver Manager
-        echo "Running test suite 1 (WS, Post, Post Detail)"
-        python -m pytest WS_test.py Post_test.py Post_detail_test.py -n 3 --alluredir=./allure-results || echo "Test suite 1 completed with errors"
+        echo "Running test suite 2"
+        python -m pytest Auth_test.py Users_test.py registr_test.py --alluredir=./allure-results || true
         
-        echo "Running test suite 2 (Auth, Users, Registration)"
-        python -m pytest Auth_test.py Users_test.py registr_test.py --alluredir=./allure-results || echo "Test suite 2 completed with errors"
-        
-        # Generate Allure report if results exist
         if [ -d "./allure-results" ]; then
-          echo "Generating Allure report"
           allure generate ./allure-results -o ./allure-report --clean
-          
-          # Move report to root directory
           mv ./allure-report ../../allure-report
-        else
-          echo "No test results found for Allure report"
         fi
-        
-        # Always succeed to continue workflow
-        exit 0
 
     - name: Upload Allure report
       if: always()
