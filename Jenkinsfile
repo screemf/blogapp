@@ -56,7 +56,7 @@ pipeline {
             }
         }
         stage('Run avtest (my-app)') {
-            steps { dir(Test){
+            steps { dir('Test'){
                 script {
                     try {
                         // Останавливаем и удаляем старый контейнер avtest
