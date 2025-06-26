@@ -112,10 +112,11 @@ jobs:
 
     - name: Upload Allure report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: allure-report
         path: allure-report
+        retention-days: 5
 
     - name: Cleanup
       run: |
