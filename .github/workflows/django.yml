@@ -104,7 +104,7 @@ jobs:
     - name: Generate Allure report
       if: always()
       run: |
-        
+        cd avtest/Test
         mkdir -p ../../allure-report
         ../allure/bin/allure generate ./allure-results -o ../../allure-report --clean
         echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0; url=index.html'></head></html>" > ../../allure-report/redirect.html
