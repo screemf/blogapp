@@ -18,9 +18,11 @@ ENV PYTHONPATH=/app
 
 # Устанавливаем Python-зависимости (включая Pillow)
 RUN pip install --no-cache-dir -r requirements.txt pillow && \
-    python manage.py migrate --noinput
+
+RUN python manage.py migrate --noinput
+
 
 # Очищаем build-зависимости (опционально)
 RUN apt-get purge -y --auto-remove gcc python3-dev libffi-dev
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--noreload"]
