@@ -103,15 +103,8 @@ jobs:
       run: |
         cd avtest/Test
         ../allure/bin/allure generate ./allure-results -o ./allure-report --clean
+        echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0; url=allure-report/index.html'></head></html>" > ../../allure-report/index.html
         mv ./allure-report ../../allure-report
-
-    - name: Upload Allure results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: allure-results
-        path: avtest/Test/allure-results
-        retention-days: 5
 
     - name: Upload Allure report
       if: always()
@@ -121,11 +114,16 @@ jobs:
         path: allure-report
         retention-days: 5
 
-    - name: Serve Allure report
+    - name: Show report instructions
       if: always()
       run: |
-        cd avtest/Test
-        ../allure/bin/allure serve allure-results
+        echo "=============================================="
+        echo "Как просмотреть Allure отчет:"
+        echo "1. Перейдите на вкладку 'Artifacts' в GitHub Actions"
+        echo "2. Скачайте архив 'allure-report'"
+        echo "3. Распакуйте архив"
+        echo "4. Откройте файл index.html в браузере"
+        echo "=============================================="
 
     - name: Cleanup
       run: |
