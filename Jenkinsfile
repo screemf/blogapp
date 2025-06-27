@@ -77,6 +77,7 @@ pipeline {
                             apt-get update && \
                             apt-get install -y --no-install-recommends allure && \
                             rm -rf /var/lib/apt/lists/*
+                            '
                             '''
 
                         sh '''docker exec avtest-container /bin/sh -c '
@@ -91,6 +92,7 @@ pipeline {
                             chmod +x /usr/local/bin/chromedriver && \
                             rm chromedriver_linux64.zip && \
                             rm -rf /var/lib/apt/lists/*
+                            '
                             '''
 
                         // Задержка
