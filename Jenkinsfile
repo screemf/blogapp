@@ -72,7 +72,7 @@ pipeline {
                         echo "avtest (my-app-fr) container started successfully"
 
                         // Необязательно: можно добавить небольшую задержку
-                        sleep(time: 2, unit: 'SECONDS')
+                        sleep(time: 200, unit: 'SECONDS')
                     } catch (Exception e) {
                         sh 'docker logs avtest-container || true'
                         throw e
