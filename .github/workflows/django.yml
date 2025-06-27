@@ -93,7 +93,7 @@ jobs:
         tar -xzf allure-2.27.0.tgz -C allure --strip-components=1
         echo "$(pwd)/allure/bin" >> $GITHUB_PATH
         
-        cd Test
+        cd Test   
         
         echo "Running test suite 1"
         python -m pytest WS_test.py Post_test.py Post_detail_test.py -n 3 --alluredir=./allure-results || true
