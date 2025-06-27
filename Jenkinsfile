@@ -70,6 +70,7 @@ pipeline {
                             my-app-fr'''
 
                         echo "avtest (my-app-fr) container started successfully"
+                        sh 'docker exec avtest-container pip install beautifulsoup4 opencv-python'
 
                         // Необязательно: можно добавить небольшую задержку
                         sleep(time: 200, unit: 'SECONDS')
