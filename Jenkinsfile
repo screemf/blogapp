@@ -73,10 +73,11 @@ pipeline {
 
                         // Устанавливаем зависимости
                         sh '''docker exec avtest-container /bin/sh -c '
-                            pip install allure-pytest beautifulsoup4 opencv-python selenium && \
+                            pip install allure-pytest beautifulsoup4 opencv-python selenium anyio pytest-asyncio pytest-tornasync  pytest-trio  pytest-twisted && \
                             apt-get update && \
                             apt-get install -y --no-install-recommends allure && \
                             rm -rf /var/lib/apt/lists/*
+
                             '
                             '''
 
