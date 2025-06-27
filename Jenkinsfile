@@ -55,22 +55,26 @@ pipeline {
                 }
             }
         }
-        stage('Run avtest (my-app-fr)') {
-            steps {
-                script {
-                    try {
-                        // Останавливаем и удаляем старый контейнер avtest
-                        sh 'docker stop avtest-container || true'
-                        sh 'docker rm avtest-container || true'
+         sh '''docker exec avtest-container /bin/sh -c '
+                    pip install allure-pytest beautifulsoup4 opencv-python selenium && \
+                    apt-get update && \
+                    apt-get install -y --no-install-recommends allure && \
+                    rm -rf /var/lib/apt/lists/*
+                    '''
 
-                        // Запускаем контейнер из существующего образа my-app
-                        sh '''docker run -d \
-                            --name avtest-container \
-                            -p 8010:8010 \
-                            my-app-fr'''
-
-                        echo "avtest (my-app-fr) container started successfully"
-                        sh 'docker exec avtest-container pip install beautifulsoup4 opencv-python'
+                sh '''docker exec avtest-container /bin/sh -c '
+                    apt-get update && \
+                    apt-get install -y --no-install-recommends \
+                        wget \
+                        unzip \
+                        google-chrome-stable && \
+                    wget -q https://chromedriver.storage.googleapis.com/$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip && \
+                    unzip chromedriver_linux64.zip && \
+                    mv chromedriver /usr/local/bin/ && \
+                    chmod +x /usr/local/bin/chromedriver && \
+                    rm chromedriver_linux64.zip && \
+                    rm -rf /var/lib/apt/lists/*
+                    '''
 
                         // Необязательно: можно добавить небольшую задержку
                         sleep(time: 200, unit: 'SECONDS')
