@@ -67,7 +67,7 @@ pipeline {
                         sh '''docker run -d \
                             --name avtest-container \
                             -p 8010:8010 \
-                            my-app'''
+                            my-app-fr'''
 
                         echo "avtest (my-app) container started successfully"
 
