@@ -69,7 +69,7 @@ pipeline {
                             -p 8010:8010 \
                             my-app-fr'''
 
-                        echo "avtest (my-app) container started successfully"
+                        echo "avtest (my-app-fr) container started successfully"
 
                         // Необязательно: можно добавить небольшую задержку
                         sleep(time: 2, unit: 'SECONDS')
