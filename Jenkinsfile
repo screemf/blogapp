@@ -78,7 +78,7 @@ pipeline {
 
                         // Необязательно: можно добавить небольшую задержку
                         sleep(time: 200, unit: 'SECONDS')
-                    } catch (Exception e) {
+                        catch (Exception e) {
                         sh 'docker logs avtest-container || true'
                         throw e
                     }
